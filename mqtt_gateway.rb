@@ -1,4 +1,13 @@
 #!/usr/bin/ruby
+# -*- coding: utf-8 -*-
+
+# Jeff Francis, N0GQ, jeff@gritch.org
+# http://www.gritch.org/amanager/
+#
+# mqtt_gateway is a piece of software that translates between Arduino
+# Manager's (also called AManager) proprietary protocol and MQTT.
+#
+# 25.September.2014
 
 # This sets up all of our default options.
 DEBUG=false
