@@ -216,7 +216,7 @@ loop {
   end
 
   # Listen for AManager to connect, then start processing data.
-  a=TCPServer.new(nil,4444)
+  a=TCPServer.new(nil,$port)
   connection=a.accept
   client_connected=true
 
