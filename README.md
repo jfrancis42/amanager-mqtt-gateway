@@ -26,22 +26,29 @@ mqtt_gateway provides translation, throttling, and caching services between MQTT
 
 The AManager protocol is extremely simple.  It consists of ASCII strings containing a variable name, an equals sign, and a value, with a termination hash character carried as the payload of a TCP packet.  For example, the following string contains a variable named "temp" which is set to the value 69.0:
 
-```temp=69.000#```
+```
+temp=69.000#
+```
 
 Multiple values can be strung together in a single TCP transaction, like this:
 
-```temp1=42#temp2=69#```
+```
+temp1=42#temp2=69#
+```
 
 Also, the value "1" represents "on" (for switches and LEDs), and "0" represents "off".  That's it, pretty simple.  Values sent from AManager to the Arduino are used to set pins, and values sent from the Arduino to AManager are used to display data (on virtual LEDs, meters, LCD displays, etc).  Normally, a user controls knobs, switches, and sliders, however, a virtual switch, knob, or slider created in AManager can have it's value pre-set (or reset at any time) by setting it's variable name just like any display widget.  This allows for multiple users all with the same switch or button, and it allows the software to pre-set some default control settings, or reset them to the values they were left at when the app was last run.  For example, to pre-set a switch named "light1" to 
 "on", the Arduino would send the following string to the app:
 
-```light1=1#```
+```
+light1=1#
+```
 
 When the AManager app connects to the Arduino after disconnect or app termination, it sends two items after successful TCP connection:  The current time/date (expressed as epoch time) and a list of switches, knobs, and sliders, so that the Arduino has the option of pre-setting those values before the users begins using the interface.  These are sent as follows:
 
-```$Time=1411603667#```
-
-```Sync=switch1#Sync=knob2#Sync=slider3#```
+```
+$Time=1411603667#
+Sync=switch1#Sync=knob2#Sync=slider3#
+```
 
 The Arduino may optionally reply by setting the values of each control listed as a "Sync" variable (it may also set them at any arbitrary future time).
 
@@ -61,7 +68,9 @@ Also, consider the case where both Alice and Bob are controlling a light bulb.  
 
 mqtt_gateway is written in ruby, and has been tested on Linux and OS/X.  It's likely to run as-is (or with few modifications) on Windows.  At present, only one gem is required:
 
-```sudo gem install mqtt```
+```
+sudo gem install mqtt
+```
 
 ##How Do I Run mqtt_gateway?
 
@@ -76,5 +85,11 @@ There are a number of shortcomings of this code (again, it was originally writte
 3. All traffic on the MQTT side must be of the form "var_name=value".  Simple raw values ("123") won't cause an error, but they won't do anything useful, either.
 4. It's probably wise to use a sitter in cron to make sure the client gets restarted if it dies.
 5. It doesn't always correctly detect the disconnect of AManager immediately.  It often takes 15-30 seconds before it realizes the client is gone and is ready to accept a new connection.
-6. You’ll need to set up a creds.yaml file to hold some of the necessary config data.  Why?  Because I wrote it that way.  Feel free to change it (I'm planning on doing it myself as time allows).  And you’ll have to change the path to the file (it’s hard-coded as /home/jfrancis/creds.yaml).  The file should set the two variables mqtthost and mqtttopic.
-7. There is currently no provision for authentication to the MQTT server.  This will change, but the current version of code requires an open MQTT server (mosquitto works great).
+6. There is currently no provision for authentication to the MQTT server.  This will change, but the current version of code requires an open MQTT server (mosquitto works great).
+7. You’ll need to set up a creds.yaml file to hold some of the necessary config data.  Why?  Because I wrote it that way.  Feel free to change it (I'm planning on doing it myself as time allows).  And you’ll have to change the path to the file (it’s hard-coded as /home/jfrancis/creds.yaml).  The file should set the two variables mqtthost and mqtttopic:
+
+```
+---
+mqtthost: mqtt.example.com
+mqtttopic: my_topic
+```
