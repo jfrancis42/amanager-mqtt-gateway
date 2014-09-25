@@ -1,34 +1,104 @@
 #!/usr/bin/ruby
 
+# This sets up all of our default options.
 DEBUG=false
 QUEUE=false
-
 max_at_once=6
 max_old_send=3
 discard_age=300
 update_age=30
+$port=4444
+$stash_file=nil
 
+# We need these gems to work...
 require 'socket'
 require 'mqtt'
 require 'time'
 require 'yaml'
 require 'trollop'
 
-$stash_file="/tmp/mqtt.yaml"
+# Process the options.
+opts=Trollop::options do
+  opt :mqtt, "MQTT Server", :type => :string
+  opt :topic, "MQTT Topic", :type => :string
+  opt :port, "TCP port to listen for AManager connections (default 4444)", :type => :string
+  opt :batch, "Maximum variable updates to AManager per transaction (default 6)", :type => :string
+  opt :old, "Maximum old variables to refresh per transaction (default 3)", :type => :string
+  opt :update, "Maximum age in seconds to resend old variable (default 30)", :type => :string
+  opt :discard, "Maximum age in seconds to discard non-updated variables (default 300)", :type => :string
+  opt :yaml, "Cache current status in a YAML file", :type => :string
+  opt :debug, "Show extra debug info (not useful for most users)"
+  opt :queue, "Dump the queue to STDOUT every few seconds (very verbose)"
+end
+
+# Override default discard time.
+if opts[:discard_given]
+  discard_age=opts[:discard].to_i
+end
+
+# Override default update time.
+if opts[:update_given]
+  update_age=opts[:update].to_i
+end
+
+# Override max number of old messages sent.
+if opts[:old_given]
+  max_old_send=opts[:old].to_i
+end
+
+# Override default max number of variables per transaction.
+if opts[:batch_given]
+  max_at_once=opts[:batch].to_i
+end
+
+# Turn on debug mode.
+if opts[:debug_given]
+  DEBUG=TRUE
+end
+
+# Turn on super-debug mode (queue dumping).
+if opts[:queue_given]
+  QUEUE=TRUE
+end
+
+# Specify the name of the mqtt server.
+if opts[:mqtt_given]
+  $server=opts[:mqtt]
+else
+  puts "--mqtt is mandatory"
+  exit
+end
+
+# Specify the name of the topic.
+if opts[:topic_given]
+  $topic=opts[:topic]
+else
+  puts "--topic is mandatory"
+  exit
+end
+
+# Specify the port to listen on.
+if opts[:port_given]
+  $port=opts[:port].to_i
+end
+
+# Specify the name of the YAML dump file.
+if opts[:yaml_given]
+  $stash_file=opts[:yaml]
+end
 
 $rxmutex=Mutex.new
 $rx=nil
-
 $send=Array.new
 
-creds=YAML.load(File.read("/home/jfrancis/creds.yaml"))
-
+# Serialize an object as YAML.
 def write_object_as_yaml(filename, object)
   File.open(filename, 'w') do |io|
     YAML::dump(object, io)
   end
 end
 
+# Deserialize a YAML object.
 def read_object_from_yaml(filename, default={})
   return default unless File.exists? filename
   File.open(filename) do |io|
@@ -87,7 +157,9 @@ def calc_queue(n)
       end
     end
     # Stash our current state.
-    write_object_as_yaml($stash_file, $rx)
+    if $stash_file
+      write_object_as_yaml($stash_file, $rx)
+    end
     sleep n
   }
 end
@@ -125,12 +197,14 @@ qthread=Thread.new { calc_queue(5) }
 qthread.abort_on_exception=true
 
 # Start the MQTT subscriber thread.
-subthread=Thread.new { mqtt_sub(creds['mqtthost'], creds['mqtttopic']) }
+subthread=Thread.new { mqtt_sub($server, $topic) }
 subthread.abort_on_exception=true
 
 loop {
   $rx=Hash.new
-  $rx=read_object_from_yaml($stash_file) if File.exist?($stash_file)
+  if $stash_file
+    $rx=read_object_from_yaml($stash_file) if File.exist?($stash_file)
+  end
 
   # Listen for AManager to connect, then start processing data.
   a=TCPServer.new(nil,4444)
@@ -138,7 +212,7 @@ loop {
   client_connected=true
 
   # This is for sending stuff from the phone to MQTT.
-  MQTT::Client.connect(creds['mqtthost']) do |c|
+  MQTT::Client.connect($server) do |c|
 
     # Loop forever (or at least until the app closes/sleeps).
     while client_connected do
@@ -146,8 +220,7 @@ loop {
       ready=IO.select([connection],nil,nil,1)
 
       # Process stuff sent by the phone.  Just sent it as it comes, no
-      # need for the cool buffering like on $rx.  Still some bugs
-      # here. TODO: fix them.
+      # need for the cool buffering like on $rx.
       if ready
         r=connection.recv(1024).split('#')
         if r.length>0
@@ -177,7 +250,7 @@ loop {
               # purging).
               puts "sending: #{n}" if DEBUG
               tmp_msg="#{name}=#{value}"
-              c.publish(creds['mqtttopic'], tmp_msg)
+              c.publish($topic, tmp_msg)
               if $rx.has_key?(name)
                 $rxmutex.synchronize {
                   $rx[name].rtime=Time.now()
@@ -322,7 +395,9 @@ loop {
           a.close
 
           # Write the latest data to the file.
-          write_object_as_yaml($stash_file, $rx)
+          if $stash_file
+            write_object_as_yaml($stash_file, $rx)
+          end
 
           # Tell the loop to start over.
           client_connected=false

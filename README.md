@@ -74,7 +74,13 @@ sudo gem install mqtt
 
 ##How Do I Run mqtt_gateway?
 
-The current version of the code pulls it's values from a YAML file called "creds.yaml", whose path is hard-coded in the software.  This stems from the  "scratch your own itch" origins of the code.  This will change over time to accept traditional command-line parameters as the code matures, and this documentation will be updated to match.
+You'll need to specify some options on the command line.  At a minimum, you need to specify an MQTT server and a topic:
+
+```
+./mqtt_gateway.rb --mqtt mqtt.server.com --topic mydata
+```
+
+The rest of the parameters are usually fine using the defaults.
 
 ##What Are the Caveats/Problems/Shortcomings of mqtt_gateway?
 
@@ -86,10 +92,3 @@ There are a number of shortcomings of this code (again, it was originally writte
 4. It's probably wise to use a sitter in cron to make sure the client gets restarted if it dies.
 5. It doesn't always correctly detect the disconnect of AManager immediately.  It often takes 15-30 seconds before it realizes the client is gone and is ready to accept a new connection.
 6. There is currently no provision for authentication to the MQTT server.  This will change, but the current version of code requires an open MQTT server (mosquitto works great).
-7. You’ll need to set up a creds.yaml file to hold some of the necessary config data.  Why?  Because I wrote it that way.  Feel free to change it (I'm planning on doing it myself as time allows).  And you’ll have to change the path to the file (it’s hard-coded as /home/jfrancis/creds.yaml).  The file should set the two variables mqtthost and mqtttopic:
-
-```
----
-mqtthost: mqtt.example.com
-mqtttopic: my_topic
-```
