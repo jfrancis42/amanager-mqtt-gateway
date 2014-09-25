@@ -5,3 +5,5 @@ release_checklist.*
 favicon.ico
 mqtt_server_web.rb
 old_README.md
+.DS_Store
+

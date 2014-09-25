@@ -12,6 +12,7 @@ require 'socket'
 require 'mqtt'
 require 'time'
 require 'yaml'
+require 'trollop'
 
 $stash_file="/tmp/mqtt.yaml"
 
