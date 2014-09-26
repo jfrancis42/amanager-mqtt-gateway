@@ -8,6 +8,14 @@
 # Manager's (also called AManager) proprietary protocol and MQTT.
 #
 # 25.September.2014
+#
+# You'll need two gems that aren't part of the default ruby distro to
+# use this software: mqtt and trollop.
+#
+# On Linux/BSD/OSX boxes, you can install them like this:
+#
+# sudo gem install mqtt
+# sudo gem install trollop
 
 # This sets up all of our default options.
 DEBUG=false
@@ -19,11 +27,13 @@ update_age=30
 $port=4444
 $stash_file=nil
 
-# We need these gems to work...
+# We need these gems to work.  These are built in...
 require 'socket'
-require 'mqtt'
 require 'time'
 require 'yaml'
+
+# ...and these are not.
+require 'mqtt'
 require 'trollop'
 
 # Process the options.
@@ -209,6 +219,8 @@ qthread.abort_on_exception=true
 subthread=Thread.new { mqtt_sub($server, $topic) }
 subthread.abort_on_exception=true
 
+# And here we go with the main thread. Run forever. Well, or until
+# something breaks...
 loop {
   $rx=Hash.new
   if $stash_file

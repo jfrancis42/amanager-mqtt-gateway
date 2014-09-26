@@ -89,6 +89,18 @@ There are a number of shortcomings of this code (again, it was originally writte
 1. The mqtt_gateway will only accept a connection from one AManager app at a time.  This is high on the list of things to change, but for the moment, if you want more than one client, you have to run more than one gateway, and put each on a different TCP port (4444, 4445, 4446, etc).
 2. All MQTT traffic is published and subscribed to on a single fixed topic.
 3. All traffic on the MQTT side must be of the form "var_name=value".  Simple raw values ("123") won't cause an error, but they won't do anything useful, either.
-4. It's probably wise to use a sitter in cron to make sure the client gets restarted if it dies.
+4. It's probably wise to use a sitter in cron to make sure the client gets restarted if it dies.  It seems robust enough in real use, but there are plenty of potential exceptions that I don't catch, and there is relatively little in the way of error detection.
 5. It doesn't always correctly detect the disconnect of AManager immediately.  It often takes 15-30 seconds before it realizes the client is gone and is ready to accept a new connection.
 6. There is currently no provision for authentication to the MQTT server.  This will change, but the current version of code requires an open MQTT server (mosquitto works great).
+7. There's something going on I don't understand which often corrupts $rx when the client disconnects. As a result, $rx is generated fresh for each client, but is updated from the previous YAML save, if that's available.
+
+##Where Do I Get It?
+
+If you're reading this somewhere other than github, click [here](https://github.com/jfrancis42/amanager-mqtt-gateway) to visit the github page for dowload.
+
+##I Have an Idea!
+
+That's great, and I'm open to hearing it. Just keep in mind this is a little personal project that I'm giving away for those who might want to play with it (or base something else on it), it's not a full on industrial-strength open source project. I have a day job, a family, and many other hobbies and projects, so ideas with code attached will get looked at (and/or implemented) much faster than those without.
+
+
+Jeff Francis

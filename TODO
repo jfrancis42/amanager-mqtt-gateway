@@ -1,0 +1,17 @@
+ - Add credentials for MQTT server login.
+
+ - There's something going on I don't understand which often corrupts
+   $rx when the client disconnects. As a result, $rx is generated
+   fresh for each client, but is updated from the previous YAML save,
+   if that's available. Fix this.
+
+ - Make it figure out that the client has disconnect much more quickly
+   than it does not.  Often takes thirty seconds to figure that out.
+
+ - Make it handle more than one client per process. Running a full
+   daemon per client is wasteful.
+
+ - Fully 'daemonize' the code.
+
+ - Catch more potential exceptions and do something smart with them
+   (ie, make everything a little more robust).
